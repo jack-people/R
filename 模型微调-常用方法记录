@@ -1,0 +1,8 @@
+import os
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]="1.00"
+os.environ["KERAS_BACKEND"] = "jax"  # Or "tensorflow" or "torch".
+
+这段代码设置了操作系统环境变量，以配置Python库的行为。具体来说：
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"]="1.00"：将XLA_PYTHON_CLIENT_MEM_FRACTION环境变量设置为1.00。这通常用于配置JAX库在Python中使用TPU（Tensor Processing Unit）时的内存分配策略。设置为1.00意味着JAX将预分配所有可用的TPU内存，这有助于减少内存碎片化，提高性能。
+os.environ["KERAS_BACKEND"]="jax"：将KERAS_BACKEND环境变量设置为jax。这指定了Keras库应该使用JAX作为其后端。Keras是一个高级神经网络API，可以运行在多个后端之上，如TensorFlow、PyTorch和JAX。通过设置这个环境变量，用户可以选择使用JAX作为Keras的后端，从而利用JAX的加速和自动微分等功能。
+此外，代码中还提到了其他两个可选的后端："tensorflow"和"torch"。如果用户希望使用TensorFlow或PyTorch作为Keras的后端，可以将os.environ["KERAS_BACKEND"]的值分别设置为"tensorflow"或"torch"。
