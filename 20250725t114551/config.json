@@ -1,0 +1,29 @@
+{
+  "monitor_settings": {
+    "screen_capture_fps": 10,
+    "audio_sample_rate": 44100,
+    "audio_channels": 2,
+    "audio_chunk_size": 1024,
+    "max_screen_frames": 100,
+    "max_audio_samples": 1000,
+    "max_log_entries": 1000,
+    "analysis_interval": 2
+  },
+  "ai_settings": {
+    "ui_change_threshold": 1000,
+    "audio_volume_threshold": 100,
+    "enable_screen_analysis": true,
+    "enable_audio_analysis": true,
+    "enable_log_analysis": true
+  },
+  "web_settings": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false
+  },
+  "device_settings": {
+    "default_device_id": null,
+    "auto_detect_device": true,
+    "adb_timeout": 10
+  }
+}

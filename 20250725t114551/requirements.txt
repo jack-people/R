@@ -1,0 +1,9 @@
+# Android模拟器监控系统依赖包
+flask==2.3.3
+flask-socketio==5.3.6
+opencv-python==4.8.1.78
+numpy==1.24.3
+pyaudio==0.2.11
+pillow==10.0.1
+python-socketio==5.9.0
+eventlet==0.33.3
