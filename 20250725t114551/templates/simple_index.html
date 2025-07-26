@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android模拟器AI监控系统 - 云端版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .cloud-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-stop {
+            background: linear-gradient(45deg, #f44336, #da190b);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .status-display {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #007bff;
+        }
+
+        .cloud-notice {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .panel h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .ai-analysis {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .ai-analysis h3 {
+            color: white;
+            border-bottom-color: rgba(255,255,255,0.3);
+        }
+
+        .analysis-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .analysis-summary {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .analysis-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-card {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .detail-card h4 {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .detail-card .value {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .demo-screen {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .demo-phone {
+            width: 200px;
+            height: 350px;
+            background: #333;
+            border-radius: 20px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .demo-screen-content {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4682B4, #87CEEB);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .demo-button {
+            width: 120px;
+            height: 40px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            background: #9E9E9E;
+        }
+
+        .demo-progress {
+            width: 140px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .demo-progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .changes-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .change-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 8px;
+            border-left: 3px solid #007bff;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .log-I { background: #e3f2fd; border-left: 3px solid #2196f3; }
+        .log-D { background: #f3e5f5; border-left: 3px solid #9c27b0; }
+        .log-W { background: #fff3e0; border-left: 3px solid #ff9800; }
+        .log-E { background: #ffebee; border-left: 3px solid #f44336; }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            background: #4CAF50;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status">
+        🟢 云端已连接
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="cloud-badge">☁️ 云端演示版</div>
+            <h1>🤖 Android模拟器AI监控系统</h1>
+            <p>云端演示版 - 体验AI实时观察Android应用效果</p>
+        </div>
+
+        <div class="cloud-notice">
+            <strong>📢 云端演示说明：</strong>
+            此版本运行在云端环境，使用模拟数据演示AI监控功能。
+            完整版本支持真实Android设备连接和音频捕获。
+        </div>
+
+        <div class="control-panel">
+            <div class="control-buttons">
+                <button class="btn btn-start" onclick="startMonitoring()">
+                    🚀 开始云端监控
+                </button>
+                <button class="btn btn-stop" onclick="stopMonitoring()">
+                    🛑 停止监控
+                </button>
+            </div>
+            <div class="status-display" id="statusDisplay">
+                <strong>状态:</strong> <span id="monitorStatus">未启动</span>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <!-- AI分析面板 -->
+            <div class="panel ai-analysis">
+                <h3>🧠 AI实时分析</h3>
+                <div id="aiAnalysisContent">
+                    <div class="analysis-item">
+                        <div class="analysis-summary">等待云端监控启动...</div>
+                        <div class="analysis-details">
+                            <div class="detail-card">
+                                <h4>屏幕活动</h4>
+                                <div class="value" id="screenActivity">-</div>
+                            </div>
+                            <div class="detail-card">
+                                <h4>音频状态</h4>
+                                <div class="value">云端不支持</div>
+                            </div>
+                            <div class="detail-card">
+                                <h4>系统状态</h4>
+                                <div class="value" id="systemStatus">-</div>
+                            </div>
+                            <div class="detail-card">
+                                <h4>置信度</h4>
+                                <div class="value" id="confidence">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 屏幕监控面板 -->
+            <div class="panel">
+                <h3>📱 屏幕监控演示</h3>
+                <div class="demo-screen">
+                    <div class="demo-phone">
+                        <div class="demo-screen-content">
+                            <div style="font-size: 12px;">Android AI Monitor</div>
+                            <div class="demo-button" id="demoButton">
+                                Demo Button
+                            </div>
+                            <div class="demo-progress">
+                                <div class="demo-progress-fill" id="demoProgress"></div>
+                            </div>
+                            <div style="font-size: 10px;">云端演示模式</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="changes-list" id="screenChanges">
+                    <p>等待屏幕变化数据...</p>
+                </div>
+            </div>
+
+            <!-- 系统信息面板 -->
+            <div class="panel">
+                <h3>ℹ️ 系统信息</h3>
+                <div id="systemInfo">
+                    <p><strong>运行模式:</strong> 云端演示</p>
+                    <p><strong>AI分析:</strong> 启用</p>
+                    <p><strong>屏幕监控:</strong> 模拟数据</p>
+                    <p><strong>音频监控:</strong> 不支持</p>
+                    <p><strong>设备连接:</strong> 演示设备</p>
+                    <p><strong>更新频率:</strong> 每3秒</p>
+                </div>
+            </div>
+
+            <!-- 日志面板 -->
+            <div class="panel">
+                <h3>📋 系统日志</h3>
+                <div id="logContent" style="max-height: 200px; overflow-y: auto;">
+                    <p>等待日志数据...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isMonitoring = false;
+        let updateInterval = null;
+
+        // 启动监控
+        async function startMonitoring() {
+            try {
+                const response = await fetch('/api/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    isMonitoring = true;
+                    document.getElementById('monitorStatus').textContent = '云端监控中...';
+                    showNotification('✅ 云端监控已启动', 'success');
+                    startUpdates();
+                    startDemoAnimation();
+                } else {
+                    showNotification('❌ 启动失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ 网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 停止监控
+        async function stopMonitoring() {
+            try {
+                const response = await fetch('/api/stop', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    isMonitoring = false;
+                    document.getElementById('monitorStatus').textContent = '已停止';
+                    showNotification('🛑 云端监控已停止', 'info');
+                    stopUpdates();
+                    stopDemoAnimation();
+                } else {
+                    showNotification('❌ 停止失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ 网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 开始定期更新
+        function startUpdates() {
+            updateInterval = setInterval(async () => {
+                await updateStatus();
+                await updateAnalysis();
+                await updateScreenData();
+                await updateLogs();
+            }, 3000);
+        }
+
+        // 停止定期更新
+        function stopUpdates() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+        }
+
+        // 更新状态
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('monitorStatus');
+                if (data.is_monitoring) {
+                    statusEl.textContent = `云端监控中 - 屏幕:${data.screen_frames} 日志:${data.log_entries}`;
+                } else {
+                    statusEl.textContent = '未启动';
+                }
+            } catch (error) {
+                console.error('状态更新失败:', error);
+            }
+        }
+
+        // 更新AI分析
+        async function updateAnalysis() {
+            try {
+                const response = await fetch('/api/analysis');
+                const data = await response.json();
+                
+                if (data.analysis_results && data.analysis_results.length > 0) {
+                    const latest = data.analysis_results[data.analysis_results.length - 1];
+                    updateAIDisplay(latest);
+                }
+            } catch (error) {
+                console.error('分析更新失败:', error);
+            }
+        }
+
+        // 更新屏幕数据
+        async function updateScreenData() {
+            try {
+                const response = await fetch('/api/screen');
+                const data = await response.json();
+                
+                if (data.recent_changes && data.recent_changes.length > 0) {
+                    updateScreenDisplay(data.recent_changes);
+                }
+            } catch (error) {
+                console.error('屏幕数据更新失败:', error);
+            }
+        }
+
+        // 更新日志
+        async function updateLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                
+                if (data.recent_logs && data.recent_logs.length > 0) {
+                    updateLogDisplay(data.recent_logs);
+                }
+            } catch (error) {
+                console.error('日志更新失败:', error);
+            }
+        }
+
+        // 更新AI显示
+        function updateAIDisplay(analysis) {
+            const analysisContent = document.getElementById('aiAnalysisContent');
+            
+            const analysisHtml = `
+                <div class="analysis-item fade-in">
+                    <div class="analysis-summary">${analysis.summary}</div>
+                    <div class="analysis-details">
+                        <div class="detail-card">
+                            <h4>屏幕活动</h4>
+                            <div class="value">${analysis.screen_analysis?.activity_level || '-'}</div>
+                        </div>
+                        <div class="detail-card">
+                            <h4>音频状态</h4>
+                            <div class="value">云端不支持</div>
+                        </div>
+                        <div class="detail-card">
+                            <h4>系统状态</h4>
+                            <div class="value">${analysis.log_analysis?.has_errors ? '⚠️' : '✅'}</div>
+                        </div>
+                        <div class="detail-card">
+                            <h4>置信度</h4>
+                            <div class="value">${Math.round((analysis.confidence || 0.85) * 100)}%</div>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;">
+                        分析时间: ${new Date(analysis.timestamp).toLocaleString()}
+                    </div>
+                </div>
+            `;
+            
+            analysisContent.innerHTML = analysisHtml;
+        }
+
+        // 更新屏幕显示
+        function updateScreenDisplay(recentChanges) {
+            const changesEl = document.getElementById('screenChanges');
+            let changesHtml = '<h4>最近的UI变化:</h4>';
+            
+            recentChanges.forEach(changes => {
+                changes.forEach(change => {
+                    changesHtml += `
+                        <div class="change-item fade-in">
+                            <strong>${change.description || '界面变化'}</strong>
+                            <div style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                                位置: (${change.position.x}, ${change.position.y}) 
+                                大小: ${change.position.width}x${change.position.height}
+                            </div>
+                            <div style="font-size: 0.8em; color: #999;">
+                                ${new Date(change.timestamp).toLocaleTimeString()}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+            
+            changesEl.innerHTML = changesHtml;
+        }
+
+        // 更新日志显示
+        function updateLogDisplay(logs) {
+            const logContent = document.getElementById('logContent');
+            let logHtml = '';
+            
+            logs.forEach(log => {
+                logHtml += `
+                    <div class="log-entry log-${log.level}">
+                        <div>${log.content}</div>
+                        <div style="font-size: 0.8em; color: #666; margin-top: 3px;">
+                            ${new Date(log.timestamp).toLocaleTimeString()}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            logContent.innerHTML = logHtml;
+        }
+
+        // 启动演示动画
+        function startDemoAnimation() {
+            let frame = 0;
+            const demoButton = document.getElementById('demoButton');
+            const demoProgress = document.getElementById('demoProgress');
+            
+            const animationInterval = setInterval(() => {
+                if (!isMonitoring) {
+                    clearInterval(animationInterval);
+                    return;
+                }
+                
+                frame++;
+                
+                // 按钮颜色变化
+                if (frame % 10 < 5) {
+                    demoButton.style.background = '#4CAF50';
+                } else {
+                    demoButton.style.background = '#9E9E9E';
+                }
+                
+                // 进度条动画
+                const progress = (frame % 20) * 5;
+                demoProgress.style.width = progress + '%';
+                
+            }, 1000);
+        }
+
+        // 停止演示动画
+        function stopDemoAnimation() {
+            const demoButton = document.getElementById('demoButton');
+            const demoProgress = document.getElementById('demoProgress');
+            
+            demoButton.style.background = '#9E9E9E';
+            demoProgress.style.width = '0%';
+        }
+
+        // 显示通知
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 80px;
+                right: 20px;
+                padding: 15px 25px;
+                border-radius: 10px;
+                color: white;
+                font-weight: bold;
+                z-index: 1001;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            switch(type) {
+                case 'success':
+                    notification.style.background = '#4CAF50';
+                    break;
+                case 'error':
+                    notification.style.background = '#f44336';
+                    break;
+                case 'info':
+                    notification.style.background = '#2196f3';
+                    break;
+                default:
+                    notification.style.background = '#666';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        // 添加CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 云端Android监控系统界面已加载');
+        });
+    </script>
+</body>
+</html>
