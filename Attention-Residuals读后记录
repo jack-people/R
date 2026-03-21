@@ -1,0 +1,103 @@
+关键词：PreNorm;
+
+主要内容摘要：
+1  Residual connections [12] with PreNorm [60] are standard in modern LLMs, yet they accumulate
+all layer outputs with fixed unit weights. 
+
+具体分析：
+PreNorm:前置归一化，是Transformer 架构中使用的层归一化（Layer Normalization）放置策略。
+这是目前大模型的标配，不同与传统的Transformer用的是PostNorm,简单来说区别就是“简单来说，它决定了**归一化层（LayerNorm）是在残差连接（Residual Connection）**的内部还是外部”。
+PostNorm -> Xout = Norm(Xin+Layer(Xin))        PreNorm -> Xout = Xin+ Layer(Norm(Xin))
+注意：现在提出RMSNorm（均方根层归一化），在Llama 或其他现代模型的源码，你会发现它们不仅是 PreNorm，而且还把 LayerNorm 换成了 RMSNorm（Root Mean Square Layer Normalization）。
+区别： RMSNorm 去掉了 LayerNorm 中的均值偏移（Mean Offset），只计算均方根缩放。
+原因： 计算量更小，效果基本一致，进一步提升了推理和训练效率。
+
+这里有个关于对归一化的思考：该层对数据进行标准化（减均值除方差），数据不是被改变了吗，不会丢失原始数据信息吗？ 
+答： 不会，对于神经网络来说，它只关注数据的“方向”和“之间的联系（相对差异）”，对其“绝对大小”不关注。这些数据都被转为向量表示，
+并且还有可学习的仿射变换（Affine Transformation），不管是 BatchNorm 还是 LayerNorm，在标准化之后，都会跟上两个可学习的参数：
+γ（缩放）和 β（平移）来还原成原始数据。
+
+2  We propose AttentionResiduals (AttnRes), which replaces this fixed accumulation with softmax attention over preceding
+layer outputs, allowing each layer to selectively aggregate earlier representations with learned, inputdependent weights.
+
+We observe a formal duality between depth-wise accumulation and the sequential recurrence in RNNs.
+
+AttnRes机制：从前残差这里参数默认为1，随着层数的加深，后面层的输出对结果的影响越来越小。
+这里作者发现该问题类似RNN里，所以引入RNN->Transformer的改变方法，引入SoftMax思想，给每一层打分，参数不在统一是1，根据权重来决定不同层输出的重要性。
+
+这里有个思考 ->  模型怎么知道哪一层重要？如何分配各层的权重？
+答：在训练阶段完成，主要的超参数通常包括：
+
+窗口大小（Lookback Window / 历史深度）；
+
+投影维度（Projection Dimension);
+
+多头机制（Number of Attention Heads）
+作者可能会让这个 Layer Attention 也变成“多头的”。比如有的头负责看语法特征，有的头负责看逻辑特征。那么“需要几个头”，又是超参数。
+
+温度系数（Temperature in Softmax）
+在做 Softmax 之前，得分往往需要除以一个温度系数 τ
+τ越小，最终分配的权重越极端（赢者通吃，某一层拿走 99%）；
+τ越大，权重越平均（大家都是 10% 左右）。
+
+3 In standard training, Full AttnRes adds negligible overhead, since the layer outputs it requires are already retained for
+backpropagation
+
+关键点： 在训练阶段（注意这里推理阶段不需要反向传播算梯度）要计算第L层参数的梯度，你必须知道第 L层的输入数据。
+现状： 因此，在**标准训练（Standard training）**中，深度学习框架（如 PyTorch 或 TensorFlow）在进行前向传播（Forward Pass）时，
+会自动把每一层的输出（Activations）都保存在显存（GPU Memory）里，直到反向传播结束。
+
+4  We develop system optimizations that make Block AttnRes practical and efficient at scale,
+including cross-stage caching that eliminates redundant transfers under pipeline parallelism and a two-phase inference
+strategy that amortizes cross-block attention via online softmax [31].
+
+online softmax：相比传统 Softmax 必须要遍历全部数据 3次（读出来找最大值 -> 读出来算总和 -> 读出来算结果）。如果数据量极大（比如长上下文的 Attention），GPU 大量的时间全浪费在“来回搬运数据”上了。
+OnlineSoftmax只从显存里把数据读 1 次，一边读，一边就把最大值和总和给算出来？
+这就是 Online Softmax 的目标：动态更新。
+假设数据是像流水线一样，一个个（或者一块块）过来的。我们用一个小本本（寄存器/SRAM）记住目前的两个状态：当前最大值 m;当前的指数总和 d
+数学魔法来了：如何“抢救”旧的总和？
+数学家发现了一个极其优雅的修正公式。当我们发现新的最大值时，不需要重头再去算前面的数据，只需要给旧的总和乘以一个“衰减系数”，它就瞬间变成了基于新最大值的正确总和！
+衰减系数 = e^旧最大值−新最大值,从头到尾一次读取数据，读完后，我们手里拿着最终的 m 和 d，现在只需对每个元素除以 d 就得到了完美的 Softmax 结果，全程再也没有回头去重新遍历前面的数据！
+原理如下所示：
+import math
+# 假设有个超长的输入数组 (可以是 chunk 块)
+X = [2.0, 5.0, 3.0]
+
+# 初始化小本本的两个变量
+current_m = -float('inf')  # 当前最大值
+current_d = 0.0            # 当前分母（指数和）
+
+# 只需要遍历 1 次！(Online 的精髓)
+for x in X:
+    # 1. 拿到新最大值
+    new_m = max(current_m, x)
+    
+    # 2. 计算修正系数 (旧最大值 - 新最大值)
+    # 如果 new_m 没变，这个 exp(0) 就是 1，相当于不变
+    # 如果 new_m 变大了，这个 exp(负数) 会等比例缩小以前的旧和
+    correction_factor = math.exp(current_m - new_m)
+    
+    # 3. 更新总和: (抢救旧总和) + (算新值的指数)
+    current_d = current_d * correction_factor + math.exp(x - new_m)
+    
+    # 4. 更新小本本
+    current_m = new_m
+
+# 最终循环结束，我们就拿到了全局正确的最大值 current_m 和 分母 current_d
+print(f"最终最大值: {current_m}")
+print(f"最终分母: {current_d}")
+
+5  The key insight behind residual connections is identity mapping: each layer preserves a direct
+path for both information and gradients to flow unchanged.
+
+残差的核心原理：恒等映射（系数都为1）
+
+
+
+
+
+
+
+
+
+
